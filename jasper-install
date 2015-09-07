@@ -1,0 +1,314 @@
+#!/bin/bash
+
+# TODO:
+#  install jasper: yaml.h not found! (check if libyaml-dev solves this)
+#  create default profile
+#  add install-scripts for other engines
+#    - Julius STT (add install for acoustic model and lexicon)
+#    - Festival TTS
+#    - Flite TTS
+#    - SVOX Pico TTS
+#    - Google TTS
+#    - Ivona TTS
+
+# global constants   ---------------------------------------------------------
+
+LOGFILE="/root/jasper-install.log"
+
+GID_ADD=4010
+GROUP_ADD=jasper
+UID_ADD=4010
+USER_ADD=jasper
+USER_PWD=jasper
+
+SPHINX_VERSION=0.8
+
+INSTALL_base=1                # required
+INSTALL_upgrade=0             # optional, lengthy, recommended
+INSTALL_alsa=1
+INSTALL_user=1
+INSTALL_jasper=1
+
+# STT-engines (one required)
+# Pocketsphinx and prereqs
+INSTALL_pocketsphinx=1
+INSTALL_pocketsphinx_src=0    # alternative, not recommended
+INSTALL_CMUCLMTK=1            # needed for pocketsphinx
+INSTALL_openfst=1             # needed for pocketsphinx
+INSTALL_m2m_aligner=1         # needed for pocketsphinx
+INSTALL_mitlm=1               # needed for pocketsphinx
+INSTALL_phonetisaurus=1       # needed for pocketsphinx
+INSTALL_phonetisaurus_exp=0   # alternative, really not recommended
+INSTALL_phonetisaurus_fst=1   # needed for pocketsphinx
+
+# Julius
+INSTALL_julius=1
+
+# TTS-engines (one required)
+INSTALL_espeak=1
+INSTALL_festival=1
+INSTALL_flite=1
+INSTALL_svoxpico=1
+
+# check uid = 0   ------------------------------------------------------------
+
+if [ "$UID" != "0" ]; then
+  echo "error: you need to be root to run this script!" >&2
+  exit 3
+fi
+
+# write message   ------------------------------------------------------------
+
+msg() {
+  echo -e "$(date): $1"
+}
+
+# --- basic pacages  ---------------------------------------------------------
+
+install_base() {
+  msg "info: updating packages"
+
+  eval `grep "VERSION_ID" /etc/os-release`
+  if [ $VERSION_ID -lt 8 ]; then
+    echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' > \
+         /etc/apt/sources.list.d/jessie.list
+  fi
+
+  apt-get update
+  apt-get -y install git-core \
+                     python-dev python-pip python-pyaudio libyaml-dev \
+                     bison \
+                     libasound2-dev libportaudio-dev \
+                     subversion autoconf libtool automake gfortran g++ \
+                     build-essential zlib1g-dev flex libesd0-dev libsndfile1-dev
+}
+
+# --- upgrade system   -------------------------------------------------------
+
+install_upgrade() {
+  apt-get -y upgrade
+}
+
+# --- change alsa configuration (output goes to 3.5mm jack)   ----------------
+
+install_alsa() {
+  sed -i -e "/options snd-usb-audio/s/-2/0/" /etc/modprobe.d/alsa-base.conf
+  alsa force-reload
+}
+
+# --- add user jasper   ------------------------------------------------------
+
+install_user() {
+  msg "info: creating user $USER_ADD:$GROUP_ADD for jasper"
+
+  # create group for user...
+  addgroup --gid $GID_ADD $GROUP_ADD
+
+  # create user with initial password 'init#pw' ...
+  echo -e "$USER_PWD\n$USER_PWD" | \
+        adduser  --gecos "" \
+           --home /home/$USER_ADD --uid $UID_ADD --gid $GID_ADD $USER_ADD
+
+  # ... and force user to change at first login
+  chage -d 0 $USER_ADD
+
+  #update user profile
+  cat >> /home/$USER_ADD/.profile <<EOF
+
+LD_LIBRARY_PATH="/usr/local/lib"
+export LD_LIBRARY_PATH
+PATH=$PATH:/usr/local/lib/
+export PATH
+EOF
+}
+
+# --- install jasper   -------------------------------------------------------
+
+install_jasper() {
+  msg "info: installing jasper"
+
+  cd /usr/local/lib
+  git clone https://github.com/jasperproject/jasper-client.git jasper
+  pip install --upgrade setuptools
+  pip install -r jasper/client/requirements.txt
+  chmod +x jasper/jasper.py
+}
+
+# --- install pocket-sphinx   -----------------------------------------------
+
+install_pocketsphinx() {
+  msg "info: installing pocketsphinx"
+
+  eval `grep "VERSION_ID" /etc/os-release`
+  if [ $VERSION_ID -gt 7 ]; then
+    apt-get -y install pocketsphinx
+  elif [ -f /etc/apt/sources.list.d/jessie.list ]; then
+    apt-get -y --force-yes -t jessie install pocketsphinx
+  fi
+}
+
+# --- install pocket-sphinx from source   -----------------------------------
+
+install_pocketsphinx_src() {
+  mkdir -p /usr/local/src
+  cd /usr/local/src
+  wget http://downloads.sourceforge.net/project/cmusphinx/sphinxbase/${SPHINX_VERSION}/sphinxbase-${SPHINX_VERSION}.tar.gz
+  tar -zxvf sphinxbase-${SPHINX_VERSION}.tar.gz
+  cd sphinxbase-${SPHINX_VERSION}/
+  ./configure --enable-fixed
+  make
+  make install PREFIX=/usr/local
+
+  cd /usr/local/src
+  wget http://downloads.sourceforge.net/project/cmusphinx/pocketsphinx/${SPHINX_VERSION}/pocketsphinx-${SPHINX_VERSION}.tar.gz
+  tar -zxvf pocketsphinx-${SPHINX_VERSION}.tar.gz
+  cd pocketsphinx-${SPHINX_VERSION}/
+  ./configure
+  make
+  make install PREFIX=/usr/local
+}
+
+# --- install CMUCLMTK   -----------------------------------------------------
+
+install_CMUCLMTK() {
+  msg "info: installing CMUCLMTK"
+
+  mkdir -p /usr/local/src
+  cd /usr/local/src
+  svn co https://svn.code.sf.net/p/cmusphinx/code/trunk/cmuclmtk/
+  cd cmuclmtk/
+  ./autogen.sh && make && make install PREFIX=/usr/local
+}
+
+# --- install OpenFST   ------------------------------------------------------
+
+install_openfst() {
+  cd /usr/local/src
+  wget http://distfiles.macports.org/openfst/openfst-1.3.3.tar.gz
+  tar -xzf http://distfiles.macports.org/openfst/openfst-1.3.3.tar.gz
+  cd openfst-1.3.3
+  ./configure --enable-compact-fsts --enable-const-fsts --enable-far \
+              --enable-lookahead-fsts --enable-pdt
+  make
+  make install PREFIX=/usr/local
+}
+
+# --- install m2m_aligner   --------------------------------------------------
+
+install_m2m_aligner() {
+  cd /usr/local/src
+  wget https://m2m-aligner.googlecode.com/files/m2m-aligner-1.2.tar.gz
+  tar -xzf m2m-aligner-1.2.tar.gz
+  cd m2m-aligner-1.2/
+  make
+  install -m 755 m2m-aligner /usr/local/bin
+}
+
+# --- install mitlm   --------------------------------------------------------
+
+install_mitlm() {
+  cd /usr/local/src
+  wget https://mitlm.googlecode.com/files/mitlm-0.4.1.tar.gz
+  tar -xzf mitlm-0.4.1.tar.gz
+  cd mitlm-0.4.1/
+  ./configure
+  make
+  make install PREFIX=/usr/local
+}
+
+# --- install phonetisaurus   ------------------------------------------------
+
+install_phonetisaurus() {
+  cd /usr/local/src
+  wget https://phonetisaurus.googlecode.com/files/phonetisaurus-0.7.8.tgz
+  tar -xvf phonetisaurus-0.7.8.tgz
+  cd phonetisaurus-0.7.8/src
+  make
+  cd ..
+  install -m 755 phonetisaurus-g2p /usr/local/bin
+}
+
+# --- install phonetisaurus FST model   --------------------------------------
+
+install_phonetisaurus_fst() {
+  cd /usr/local/src
+  wget http://phonetisaurus.googlecode.com/files/g014b2b.tgz
+  tar -xzf g014b2b.tgz
+  cd g014b2b/
+  ./compile-fst.sh
+  cd ..
+  install -m 644  g014b2b /usr/local/lib/phonetisaurus
+}
+
+# --- install Phonetisaurus, m2m-aligner and MITLM   -------------------------
+
+install_phonetisaurus_exp() {
+  msg "info: installing phonetisaurus from experimental"
+
+  echo 'deb http://ftp.debian.org/debian experimental main contrib non-free' > \
+       /etc/apt/sources.list.d/experimental.list
+  apt-get update
+  apt-get -y --force-yes -t experimental install phonetisaurus m2m-aligner mitlm
+}
+
+# --- install julius   ------------------------------------------------------
+
+install_julius() {
+  cd /usr/local/src
+  wget http://sourceforge.net/projects/julius/downloads/60273/julius-4.3.1.tar.gz
+  cd julius
+  ./configure --enable-words-int
+  make
+  make install PREFIX=/usr/local
+}
+
+# --- install espeak   ------------------------------------------------------
+
+install_espeak() {
+  apt-get -y install espeak
+}
+
+# --- install a module   -----------------------------------------------------
+
+do_install() {
+  declare -i start duration
+  local var
+  var="INSTALL_$module"
+  if [ -z "${!var}" ]; then
+    msg "error: INSTALL_$module is unset!"
+    return
+  elif [ "${!var}" = "0" ]; then
+    msg "info: not installing module $module"
+    return
+  fi
+
+  start=$SECONDS
+  msg "info: installing module $module"
+  eval install_$module
+  msg "info: install of module $module finished"
+  let duration=$SECONDS-start
+  msg "info: duration for module $module: $duration sec"
+}
+
+# --- main program   ---------------------------------------------------------
+
+SECONDS=0
+msg "info: start time: $(date)" | tee "$LOGFILE"
+
+if [ -n "$INSTALL_ONLY" ]; then
+  # debug hack: give explicit module list
+  MODULE_LIST="$INSTALL_ONLY"
+else
+  # extract module list from this file
+  MODULE_LIST=$(sed -ne '/^install_/s/install_\(.*\)(.*/\1/p' "$0")
+fi
+
+for module in $MODULE_LIST; do
+  do_install "$module" 2>&1 | tee -a "$LOGFILE"
+done
+msg "info: total duration: $SECONDS sec" >> "$LOGFILE"
+msg "info: end time: $(date)"       >> "$LOGFILE"
+
+echo -e "\n\nSummary:\n"
+head -n 1 "$LOGFILE"
+tail -n 2 "$LOGFILE"
