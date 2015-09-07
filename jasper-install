@@ -292,16 +292,19 @@ do_install() {
 
 # --- main program   ---------------------------------------------------------
 
-SECONDS=0
-msg "info: start time: $(date)" | tee "$LOGFILE"
-
-if [ -n "$INSTALL_ONLY" ]; then
-  # debug hack: give explicit module list
-  MODULE_LIST="$INSTALL_ONLY"
-else
+if [ -z "$1" -o "$1" = "-h" ]; then
+  echo -e "usage: $0 all | module [...]" >&2
+  exit 0 
+elif [ "$1" = "all" ]; then
   # extract module list from this file
   MODULE_LIST=$(sed -ne '/^install_/s/install_\(.*\)(.*/\1/p' "$0")
+else
+  # use modules from the command line
+  MODULE_LIST="$@"
 fi
+
+SECONDS=0
+msg "info: start time: $(date)" | tee "$LOGFILE"
 
 for module in $MODULE_LIST; do
   do_install "$module" 2>&1 | tee -a "$LOGFILE"
@@ -311,4 +314,7 @@ msg "info: end time: $(date)"       >> "$LOGFILE"
 
 echo -e "\n\nSummary:\n"
 head -n 1 "$LOGFILE"
+echo
+grep "duration for module" "$LOGFILE"
+echo
 tail -n 2 "$LOGFILE"
