@@ -1,16 +1,5 @@
 #!/bin/bash
 
-# TODO:
-#  install jasper: yaml.h not found! (check if libyaml-dev solves this)
-#  create default profile
-#  add install-scripts for other engines
-#    - Julius STT (add install for acoustic model and lexicon)
-#    - Festival TTS
-#    - Flite TTS
-#    - SVOX Pico TTS
-#    - Google TTS
-#    - Ivona TTS
-
 # global constants   ---------------------------------------------------------
 
 LOGFILE="/root/jasper-install.log"
@@ -23,11 +12,13 @@ USER_PWD=jasper
 
 SPHINX_VERSION=0.8
 
-INSTALL_base=1                # required
+INSTALL_update=1              # required
 INSTALL_upgrade=0             # optional, lengthy, recommended
-INSTALL_alsa=1
-INSTALL_user=1
-INSTALL_jasper=1
+INSTALL_devtools=1            # required
+
+INSTALL_alsa=1                # optional, configures sound-system
+INSTALL_user=1                # required
+INSTALL_jasper=1              # required
 
 # STT-engines (one required)
 # Pocketsphinx and prereqs
@@ -63,9 +54,9 @@ msg() {
   echo -e "$(date): $1"
 }
 
-# --- basic pacages  ---------------------------------------------------------
+# --- update package system   ------------------------------------------------
 
-install_base() {
+install_update() {
   msg "info: updating packages"
 
   eval `grep "VERSION_ID" /etc/os-release`
@@ -75,6 +66,19 @@ install_base() {
   fi
 
   apt-get update
+}
+
+# --- upgrade system   -------------------------------------------------------
+
+install_upgrade() {
+  msg "info: upgrading system"
+  apt-get -y upgrade
+}
+
+# --- basic development-packages  --------------------------------------------
+
+install_devtools() {
+  msg "info: installing development tools and environment"
   apt-get -y install git-core \
                      python-dev python-pip python-pyaudio libyaml-dev \
                      bison \
@@ -83,15 +87,10 @@ install_base() {
                      build-essential zlib1g-dev flex libesd0-dev libsndfile1-dev
 }
 
-# --- upgrade system   -------------------------------------------------------
-
-install_upgrade() {
-  apt-get -y upgrade
-}
-
 # --- change alsa configuration (output goes to 3.5mm jack)   ----------------
 
 install_alsa() {
+  msg "info: configuring alsa"
   sed -i -e "/options snd-usb-audio/s/-2/0/" /etc/modprobe.d/alsa-base.conf
   alsa force-reload
 }
