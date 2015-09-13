@@ -43,12 +43,10 @@ Install Jasper
 The installation script `jasper-install` assumes that you start of with
 a clean installation of Raspbian-Wheezy. A simple
 
-    sudo su -
-    ./jasper-install all
+    sudo ./jasper-install all
 
-should do the job (assuming that you copied the installation script to root's
-home-directory `/root`). The script will create a (large) logfile 
-`/root/jasper-install.log`, please check that file for errors.
+should do the job. The script will create a (large) logfile 
+`./jasper-install.log`, please check that file for errors.
 
 Besides `all` you can pass the names of one or more individual modules to 
 `jasper-install`. This is more of a development feature to verify the
