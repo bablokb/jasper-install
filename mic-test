@@ -2,10 +2,10 @@
 
 [ -n "$1" ] && [ "$1" = "-h" ] && ( echo "usage: $0 [duration]"; exit 0 )
 
-echo -en "recording ${1:-10} seconds of sound:"
-arecord -d ${1:-10} /tmp/mic-test.wav
-echo " done"
+echo -e "recording ${1:-5} seconds of sound:\n"
+arecord -d ${1:-5} -c 2 -f S16 -r 48 /tmp/mic-test.wav
+echo -e "\ndone"
 sleep 1
-echo -en "playing recording:"
+echo -e "playing recording:\n"
 aplay -D hw:1,0 /tmp/mic-test.wav
-echo " done"
+echo -e "\ndone"
