@@ -2,44 +2,12 @@
 
 # global constants   ---------------------------------------------------------
 
-LOGFILE="/root/jasper-install.log"
+# number of processors to use
+: ${PMAX:=`ls -1d /sys/devices/system/cpu/cpu[0-9]* | wc -l`}
 
-GID_ADD=4010
-GROUP_ADD=jasper
-UID_ADD=4010
-USER_ADD=jasper
-USER_PWD=jasper
-
-SPHINX_VERSION=0.8
-
-INSTALL_update=1              # required
-INSTALL_upgrade=0             # optional, lengthy, recommended
-INSTALL_devtools=1            # required
-
-INSTALL_alsa=1                # optional, configures sound-system
-INSTALL_user=1                # required
-INSTALL_jasper=1              # required
-
-# STT-engines (one required)
-# Pocketsphinx and prereqs
-INSTALL_pocketsphinx=1
-INSTALL_pocketsphinx_src=0    # alternative, not recommended
-INSTALL_CMUCLMTK=1            # needed for pocketsphinx
-INSTALL_openfst=1             # needed for pocketsphinx
-INSTALL_m2m_aligner=1         # needed for pocketsphinx
-INSTALL_mitlm=1               # needed for pocketsphinx
-INSTALL_phonetisaurus=1       # needed for pocketsphinx
-INSTALL_phonetisaurus_exp=0   # alternative, really not recommended
-INSTALL_phonetisaurus_fst=1   # needed for pocketsphinx
-
-# Julius
-INSTALL_julius=1
-
-# TTS-engines (one required)
-INSTALL_espeak=1
-INSTALL_festival=1
-INSTALL_flite=1
-INSTALL_svoxpico=1
+# read configuration
+: ${CFG_FILE:=$0.cfg}
+[ -f "$CFG_FILE" ] && source "$CFG_FILE"
 
 # check uid = 0   ------------------------------------------------------------
 
@@ -58,13 +26,6 @@ msg() {
 
 install_update() {
   msg "info: updating packages"
-
-  eval `grep "VERSION_ID" /etc/os-release`
-  if [ $VERSION_ID -lt 8 ]; then
-    echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' > \
-         /etc/apt/sources.list.d/jessie.list
-  fi
-
   apt-get update
 }
 
@@ -73,6 +34,15 @@ install_update() {
 install_upgrade() {
   msg "info: upgrading system"
   apt-get -y upgrade
+}
+
+# --- install more swap-space (needed for compiles)   ------------------------
+
+install_swap() {
+  sed -i -e 's/100/1024/' /etc/dphys-swapfile
+  /sbin/dphys-swapfile swapoff
+  /sbin/dphys-swapfile setup
+  /sbin/dphys-swapfile swapon
 }
 
 # --- basic development-packages  --------------------------------------------
@@ -105,7 +75,7 @@ install_user() {
 
   # create user with initial password 'init#pw' ...
   echo -e "$USER_PWD\n$USER_PWD" | \
-        adduser  --gecos "" \
+        adduser  --gecos "" --groups audio \
            --home /home/$USER_ADD --uid $UID_ADD --gid $GID_ADD $USER_ADD
 
   # ... and force user to change at first login
@@ -114,35 +84,39 @@ install_user() {
   #update user profile
   cat >> /home/$USER_ADD/.profile <<EOF
 
-LD_LIBRARY_PATH="/usr/local/lib"
+LD_LIBRARY_PATH="${PREFIX}/lib"
 export LD_LIBRARY_PATH
-PATH=$PATH:/usr/local/lib/
+PATH=\$PATH:${PREFIX}/lib/
 export PATH
 EOF
+
 }
 
 # --- install jasper   -------------------------------------------------------
 
 install_jasper() {
-  msg "info: installing jasper"
-
-  cd /usr/local/lib
+  cd ${PREFIX}/lib
   git clone https://github.com/jasperproject/jasper-client.git jasper
   pip install --upgrade setuptools
   pip install -r jasper/client/requirements.txt
   chmod +x jasper/jasper.py
+
+  # add default profile for jasper  
 }
 
 # --- install pocket-sphinx   -----------------------------------------------
 
 install_pocketsphinx() {
-  msg "info: installing pocketsphinx"
-
   eval `grep "VERSION_ID" /etc/os-release`
   if [ $VERSION_ID -gt 7 ]; then
     apt-get -y install pocketsphinx
-  elif [ -f /etc/apt/sources.list.d/jessie.list ]; then
-    apt-get -y --force-yes -t jessie install pocketsphinx
+  else
+    echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' > \
+         /etc/apt/sources.list.d/jessie.list
+    apt-get update
+    apt-get -y --force-yes -t jessie install pocketsphinx python-pocketsphinx
+    rm -f /etc/apt/sources.list.d/jessie.list
+    apt-get update
   fi
 }
 
@@ -151,99 +125,151 @@ install_pocketsphinx() {
 install_pocketsphinx_src() {
   mkdir -p /usr/local/src
   cd /usr/local/src
-  wget http://downloads.sourceforge.net/project/cmusphinx/sphinxbase/${SPHINX_VERSION}/sphinxbase-${SPHINX_VERSION}.tar.gz
+  [ ! -f sphinxbase-${SPHINX_VERSION}.tar.gz ] && \
+    wget http://downloads.sourceforge.net/project/cmusphinx/sphinxbase/${SPHINX_VERSION}/sphinxbase-${SPHINX_VERSION}.tar.gz
+  if [ ! -f sphinxbase-${SPHINX_VERSION}.tar.gz ]; then
+    msg "error: download of sphinxbase failed"
+    return 3
+  fi
+
   tar -zxvf sphinxbase-${SPHINX_VERSION}.tar.gz
   cd sphinxbase-${SPHINX_VERSION}/
   ./configure --enable-fixed
-  make
-  make install PREFIX=/usr/local
+  make -j $PMAX
+  make install PREFIX="$PREFIX"
 
   cd /usr/local/src
-  wget http://downloads.sourceforge.net/project/cmusphinx/pocketsphinx/${SPHINX_VERSION}/pocketsphinx-${SPHINX_VERSION}.tar.gz
+  [ ! -f pocketsphinx-${SPHINX_VERSION}.tar.gz ] && \
+    wget http://downloads.sourceforge.net/project/cmusphinx/pocketsphinx/${SPHINX_VERSION}/pocketsphinx-${SPHINX_VERSION}.tar.gz
+  if [ ! -f pocketsphinx-${SPHINX_VERSION}.tar.gz ]; then
+    msg "error: download of pocketsphinx failed"
+    return 3
+  fi
+
   tar -zxvf pocketsphinx-${SPHINX_VERSION}.tar.gz
   cd pocketsphinx-${SPHINX_VERSION}/
   ./configure
-  make
-  make install PREFIX=/usr/local
+  make -j $PMAX
+  make install PREFIX="$PREFIX"
 }
 
 # --- install CMUCLMTK   -----------------------------------------------------
 
 install_CMUCLMTK() {
-  msg "info: installing CMUCLMTK"
-
   mkdir -p /usr/local/src
   cd /usr/local/src
   svn co https://svn.code.sf.net/p/cmusphinx/code/trunk/cmuclmtk/
   cd cmuclmtk/
-  ./autogen.sh && make && make install PREFIX=/usr/local
+  ./autogen.sh && make -j $PMAX && make install PREFIX="$PREFIX"
 }
 
 # --- install OpenFST   ------------------------------------------------------
 
 install_openfst() {
+  local cpus="$PMAX"
+  if [ "$PMAX" -eq 4 ]; then
+    # to prevent excessive swapping on model 2
+    cpus=2
+  fi
   cd /usr/local/src
-  wget http://distfiles.macports.org/openfst/openfst-1.3.3.tar.gz
-  tar -xzf http://distfiles.macports.org/openfst/openfst-1.3.3.tar.gz
-  cd openfst-1.3.3
+  [ ! -f openfst-${OPENFST_VERSION}.tar.gz ] && \
+    wget http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-${OPENFST_VERSION}.tar.gz
+
+  [ ! -f openfst-${OPENFST_VERSION}.tar.gz ]; then
+    msg "error: download of openfst failed"
+    return 3
+  fi
+
+  tar -xzf openfst-${OPENFST_VERSION}.tar.gz
+  cd openfst-${OPENFST_VERSION}
   ./configure --enable-compact-fsts --enable-const-fsts --enable-far \
-              --enable-lookahead-fsts --enable-pdt
-  make
-  make install PREFIX=/usr/local
+              --enable-lookahead-fsts --enable-pdt \
+              --enable-static=no
+  make -j $cpus
+  make install PREFIX="$PREFIX"
+
+  # patch include-file (needed by phonetisaurus, workaround for gcc 4.6-bug)
+  sed -i  \
+      -e '/\.begin[^(]/s/\.begin/.begin_/g' \
+      -e '/>begin[^(]/s/>begin/>begin_/g' \
+      -e '/\.end[^(]/s/\.end/.end_/g' \
+      -e '/>end[^(]/s/>end/>end_/g' /usr/local/include/fst/interval-set.h
 }
 
 # --- install m2m_aligner   --------------------------------------------------
 
 install_m2m_aligner() {
   cd /usr/local/src
-  wget https://m2m-aligner.googlecode.com/files/m2m-aligner-1.2.tar.gz
-  tar -xzf m2m-aligner-1.2.tar.gz
-  cd m2m-aligner-1.2/
-  make
-  install -m 755 m2m-aligner /usr/local/bin
+  [ ! -f m2m-aligner-${M2M_ALIGNER_VERSION}.tar.gz ] && \
+    wget https://m2m-aligner.googlecode.com/files/m2m-aligner-${M2M_ALIGNER_VERSION}.tar.gz
+  if [ ! -f m2m-aligner-${M2M_ALIGNER_VERSION}.tar.gz ]; then
+    msg "error: download of m2m-aligner failed"
+    return 3
+  fi
+
+  tar -xzf m2m-aligner-${M2M_ALIGNER_VERSION}.tar.gz
+  cd m2m-aligner-${M2M_ALIGNER_VERSION}/
+  make -j $PMAX
+  install -m 755 m2m-aligner ${PREFIX}/bin
 }
 
 # --- install mitlm   --------------------------------------------------------
 
 install_mitlm() {
   cd /usr/local/src
-  wget https://mitlm.googlecode.com/files/mitlm-0.4.1.tar.gz
-  tar -xzf mitlm-0.4.1.tar.gz
-  cd mitlm-0.4.1/
+  [ ! -f mitlm-${MITLM_VERSION}.tar.gz ] && \
+    wget https://mitlm.googlecode.com/files/mitlm-${MITLM_VERSION}.tar.gz
+  if [ ! -f mitlm-${MITLM_VERSION}.tar.gz ]; then
+    msg "error: download of mitlm failed"
+    return 3
+  fi
+
+  tar -xzf mitlm-${MITLM_VERSION}.tar.gz
+  cd mitlm-${MITLM_VERSION}/
   ./configure
-  make
-  make install PREFIX=/usr/local
+  make -j $PMAX
+  make install PREFIX="$PREFIX"
 }
 
 # --- install phonetisaurus   ------------------------------------------------
 
 install_phonetisaurus() {
   cd /usr/local/src
-  wget https://phonetisaurus.googlecode.com/files/phonetisaurus-0.7.8.tgz
-  tar -xvf phonetisaurus-0.7.8.tgz
-  cd phonetisaurus-0.7.8/src
-  make
-  cd ..
-  install -m 755 phonetisaurus-g2p /usr/local/bin
+  [ ! -f phonetisaurus-${PHONETISAURUS_VERSION}.tgz ] && \
+    wget https://www.dropbox.com/s/154q9yt3xenj2gr/phonetisaurus-${PHONETISAURUS_VERSION}.tgz
+  if [ ! -f phonetisaurus-${PHONETISAURUS_VERSION}.tgz ]; then
+    msg "error: download of phonetisaurus failed"
+    return 3
+  fi
+
+  tar -xvf phonetisaurus-${PHONETISAURUS_VERSION}.tgz
+  cd phonetisaurus-${PHONETISAURUS_VERSION}/phonetisaurus/src
+  make -j $PMAX ../../bin/phonetisaurus-g2p
+  install -m 755 ../../bin/phonetisaurus-g2p ${PREFIX}/bin
 }
 
 # --- install phonetisaurus FST model   --------------------------------------
 
 install_phonetisaurus_fst() {
   cd /usr/local/src
-  wget http://phonetisaurus.googlecode.com/files/g014b2b.tgz
+  [ ! -f  g014b2b.tgz ] && \
+    wget -O g014b2b.tgz https://www.dropbox.com/s/kfht75czdwucni1/g014b2b.tgz?dl=0
+  if [ ! -f  g014b2b.tgz ]; then
+    msg "error: download of g014b2b  failed"
+    return 3
+  fi
+
   tar -xzf g014b2b.tgz
   cd g014b2b/
-  ./compile-fst.sh
+  LD_LIBRARY_PATH="$PREFIX/lib" ./compile-fst.sh
   cd ..
-  install -m 644  g014b2b /usr/local/lib/phonetisaurus
+  rm -fr  "${PREFIX}/lib/phonetisaurus"
+  mv g014b2b "${PREFIX}/lib/phonetisaurus"
 }
 
 # --- install Phonetisaurus, m2m-aligner and MITLM   -------------------------
 
 install_phonetisaurus_exp() {
-  msg "info: installing phonetisaurus from experimental"
-
   echo 'deb http://ftp.debian.org/debian experimental main contrib non-free' > \
        /etc/apt/sources.list.d/experimental.list
   apt-get update
@@ -254,17 +280,67 @@ install_phonetisaurus_exp() {
 
 install_julius() {
   cd /usr/local/src
-  wget http://sourceforge.net/projects/julius/downloads/60273/julius-4.3.1.tar.gz
+  [ ! -f  julius-${JULIUS_VERSION}.tar.gz ] && \
+    wget http://sourceforge.net/projects/julius/downloads/60273/julius-${JULIUS_VERSION}.tar.gz
+  if [ ! -f  julius-${JULIUS_VERSION}.tar.gz ]; then
+    msg "error: download of julius failed"
+    return 3
+  fi
+
   cd julius
   ./configure --enable-words-int
-  make
-  make install PREFIX=/usr/local
+  make -j $PMAX
+  make install PREFIX="$PREFIX"
 }
 
-# --- install espeak   ------------------------------------------------------
+# --- install julius model and lexicon   ------------------------------------
+
+install_julius_modlex() {
+  :
+}
+
+# --- install festival   -----------------------------------------------------
+
+install_festival() {
+  apt-get -y install festival festvox-don
+}
+
+# --- install flite   --------------------------------------------------------
+
+install_flite() {
+  apt-get -y install flite
+}
+
+# --- install svox pico   ---------------------------------------------------
+
+install_svoxpico() {
+  apt-get -y install libttspico-utils
+}
+
+# --- install google TTS   ---------------------------------------------------
+
+install_google_tts() {
+  apt-get -y install python-pymad
+  pip install --upgrade gTTS
+}
+
+# --- install ivona   --------------------------------------------------------
+
+install_ivona() {
+  apt-get -y install python-pymad
+  pip install --upgrade pyvona
+}
+
+# --- install espeak   -------------------------------------------------------
 
 install_espeak() {
   apt-get -y install espeak
+}
+
+# --- finalize   --------------------------------------------------------------
+
+install_finalize() {
+  chown -R root:staff /usr/local/*
 }
 
 # --- install a module   -----------------------------------------------------
