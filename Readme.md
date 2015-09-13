@@ -14,7 +14,7 @@ big image, I just provide a ready to run installation script.
 The installation script will work on a model 1 or a model 2 Raspberry Pi
 (Bananapi to be verified).
 
-** This is work in progress (alpha-stage), don't use it yet **
+** This is work in progress (pre beta-stage), it might or might not work **
 
 
 Configure Installation
