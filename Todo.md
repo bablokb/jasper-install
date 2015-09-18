@@ -1,11 +1,9 @@
 TODOs for jasper-install
 ========================
 
-- user
-  * make jasper a system-user
-  * move configuration to /etc/jasper/profile.yml
-
-- create default profile for user jasper
+- verify system-service jasper
+  * start, status, stop
+  * amount of text written to syslog?
 
 - add install-scripts for other engines
   * add module initd (add to init-system)
@@ -18,7 +16,7 @@ TODOs for jasper-install
   * upgrade ??
   * devtools (1438s) ok
   * alsa (4s) ok
-  * user (6s) ok
+  * user (17s) ok
   * jasper (443s) ok
   * pocketsphinx (316s) ok
   * pocketsphinx_src
@@ -41,11 +39,11 @@ TODOs for jasper-install
 
 - add timing information to Readme.md
 
-- patch jasper to use /etc/jasper.cfg as configuration (?)
-
 
 Later
 -----
+
+- add option "-f" to force install of a module
 
 - add configuration to only install packages using apt (for cloning
   of the installation to other systems)
