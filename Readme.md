@@ -56,7 +56,7 @@ correct operation of the given install-task.
 If you connect with ssh and don't want to keep the connection open all
 the time, you can also start the installation with
 
-    nohup sudo ./jasper-install > /dev/null &
+    nohup sudo ./jasper-install all > /dev/null &
 
 To monitor the progress in this case, you can use the command
 
