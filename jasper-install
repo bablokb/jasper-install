@@ -1,4 +1,16 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# This script installs all software components to run Jasper. This script
+# mainly translates the textual instruchtions on the Jasper project site
+# to script code.
+#
+# This file is part of the project http://github.com/bablokb/jasper-install
+#
+# Copyright Bernhard Bablok (mail at bablokb dot de)
+#
+# Released under the GPL V3
+#
+# -----------------------------------------------------------------------------
 
 # global constants   ---------------------------------------------------------
 
@@ -7,7 +19,12 @@
 
 # read configuration
 : ${CFG_FILE:=$0.cfg}
-[ -f "$CFG_FILE" ] && source "$CFG_FILE"
+if [ -f "$CFG_FILE" ]; then
+   source "$CFG_FILE"
+else
+   echo "error: could not find $CFG_FILE!"
+   exit 3
+fi
 
 # check uid = 0   ------------------------------------------------------------
 
@@ -60,7 +77,6 @@ install_devtools() {
 # --- change alsa configuration (output goes to 3.5mm jack)   ----------------
 
 install_alsa() {
-  msg "info: configuring alsa"
   sed -i -e "/options snd-usb-audio/s/-2/0/" /etc/modprobe.d/alsa-base.conf
   alsa force-reload
 }
@@ -68,40 +84,44 @@ install_alsa() {
 # --- add user jasper   ------------------------------------------------------
 
 install_user() {
-  msg "info: creating user $USER_ADD:$GROUP_ADD for jasper"
+  msg "info: creating user $USER_ADD for jasper"
 
-  # create group for user...
-  addgroup --gid $GID_ADD $GROUP_ADD
-
-  # create user with initial password 'init#pw' ...
-  echo -e "$USER_PWD\n$USER_PWD" | \
-        adduser  --gecos "" --groups audio \
-           --home /home/$USER_ADD --uid $UID_ADD --gid $GID_ADD $USER_ADD
-
-  # ... and force user to change at first login
-  chage -d 0 $USER_ADD
-
-  #update user profile
-  cat >> /home/$USER_ADD/.profile <<EOF
-
-LD_LIBRARY_PATH="${PREFIX}/lib"
-export LD_LIBRARY_PATH
-PATH=\$PATH:${PREFIX}/lib/
-export PATH
-EOF
+  # create system user (no login)
+  adduser --system --disabled-login --gecos "" --no-create-home \
+              --group --home "$PREFIX/lib/jasper"  $USER_ADD
+  adduser $USER_ADD audio
 
 }
 
 # --- install jasper   -------------------------------------------------------
 
 install_jasper() {
+  # add default profile for jasper
+  mkdir /etc/jasper
+  if [ -f "profile.yml" ]; then
+    cp profile.yml /etc/jasper
+    chown root:root /etc/jasper
+  else
+    msg "warning: could not find profile.yml"
+  fi
+
+  # install jasper and it's rewquirements
   cd ${PREFIX}/lib
-  git clone https://github.com/jasperproject/jasper-client.git jasper
+  if [ ! -d jasper ]; then
+    git clone https://github.com/jasperproject/jasper-client.git jasper
+  fi
   pip install --upgrade setuptools
   pip install -r jasper/client/requirements.txt
-  chmod +x jasper/jasper.py
+  chown -R $USER_ADD:$USER_ADD "$PREFIX/lib/jasper"
+  chmod +x "jasper/jasper.py"
 
-  # add default profile for jasper  
+  # install wrapper script
+  echo > "$PREFIX/bin/jasper" <<EOF
+#!/bin/bash
+$PREFIX/lib/jasper/jasper.py
+EOF
+  chown root:staff "$PREFIX/bin/jasper"
+  chmod +x "$PREFIX/bin/jasper"
 }
 
 # --- install pocket-sphinx   -----------------------------------------------
@@ -132,7 +152,7 @@ install_pocketsphinx_src() {
     return 3
   fi
 
-  tar -zxvf sphinxbase-${SPHINX_VERSION}.tar.gz
+  tar -zxf sphinxbase-${SPHINX_VERSION}.tar.gz
   cd sphinxbase-${SPHINX_VERSION}/
   ./configure --enable-fixed
   make -j $PMAX
@@ -146,7 +166,7 @@ install_pocketsphinx_src() {
     return 3
   fi
 
-  tar -zxvf pocketsphinx-${SPHINX_VERSION}.tar.gz
+  tar -zxf pocketsphinx-${SPHINX_VERSION}.tar.gz
   cd pocketsphinx-${SPHINX_VERSION}/
   ./configure
   make -j $PMAX
@@ -158,7 +178,9 @@ install_pocketsphinx_src() {
 install_CMUCLMTK() {
   mkdir -p /usr/local/src
   cd /usr/local/src
-  svn co https://svn.code.sf.net/p/cmusphinx/code/trunk/cmuclmtk/
+  if [ ! -d cmuclmtk ]; then
+    svn co https://svn.code.sf.net/p/cmusphinx/code/trunk/cmuclmtk/
+  fi
   cd cmuclmtk/
   ./autogen.sh && make -j $PMAX && make install PREFIX="$PREFIX"
 }
@@ -175,7 +197,7 @@ install_openfst() {
   [ ! -f openfst-${OPENFST_VERSION}.tar.gz ] && \
     wget http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-${OPENFST_VERSION}.tar.gz
 
-  [ ! -f openfst-${OPENFST_VERSION}.tar.gz ]; then
+  if [ ! -f openfst-${OPENFST_VERSION}.tar.gz ]; then
     msg "error: download of openfst failed"
     return 3
   fi
@@ -242,7 +264,7 @@ install_phonetisaurus() {
     return 3
   fi
 
-  tar -xvf phonetisaurus-${PHONETISAURUS_VERSION}.tgz
+  tar -xzf phonetisaurus-${PHONETISAURUS_VERSION}.tgz
   cd phonetisaurus-${PHONETISAURUS_VERSION}/phonetisaurus/src
   make -j $PMAX ../../bin/phonetisaurus-g2p
   install -m 755 ../../bin/phonetisaurus-g2p ${PREFIX}/bin
@@ -337,10 +359,29 @@ install_espeak() {
   apt-get -y install espeak
 }
 
-# --- finalize   --------------------------------------------------------------
+# --- finalize   -------------------------------------------------------------
 
 install_finalize() {
-  chown -R root:staff /usr/local/*
+  chown -R root:staff /usr/local/src/*
+}
+
+# --- cleanup   --------------------------------------------------------------
+
+install_cleanup() {
+  rm -fr /usr/local/src/*
+}
+
+# --- install system service   -----------------------------------------------
+
+install_service() {
+  if [ -f "jasper" ]; then
+    cp jasper /etc/init.d
+    chmod +x /etc/init.d/jasper
+    chown root:root /etc/init.d/jasper
+    update-rc.d jasper defaults
+  else
+    msg "error: could not find service-script jasper"
+  fi
 }
 
 # --- install a module   -----------------------------------------------------
