@@ -7,12 +7,3 @@ wmo_id: 10866
 timezone: Europe/Berlin
 phone_number: ''
 prefers_email: true
-stt_engine: sphinx
-tts_engine: espeak-tts
-pocketsphinx:
-  fst_model: '/usr/local/lib/phonetisaurus/g014b2b.fst'
-  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
-espeak-tts:
-  voice: 'default+m3'
-  pitch_adjustment: 40
-  words_per_minute: 120
