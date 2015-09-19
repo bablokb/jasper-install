@@ -303,13 +303,15 @@ install_phonetisaurus_exp() {
 install_julius() {
   cd /usr/local/src
   [ ! -f  julius-${JULIUS_VERSION}.tar.gz ] && \
-    wget http://sourceforge.net/projects/julius/downloads/60273/julius-${JULIUS_VERSION}.tar.gz
+    wget -O julius-${JULIUS_VERSION}.tar.gz \
+    "http://osdn.jp/frs/redir.php?m=iij&f=%2Fjulius%2F60273%2Fjulius-${JULIUS_VERSION}.tar.gz"
   if [ ! -f  julius-${JULIUS_VERSION}.tar.gz ]; then
     msg "error: download of julius failed"
     return 3
   fi
 
-  cd julius
+  [ ! -d "julius-${JULIUS_VERSION}" ] && tar -xzf julius-${JULIUS_VERSION}.tar.gz
+  cd julius-${JULIUS_VERSION}
   ./configure --enable-words-int
   make -j $PMAX
   make install PREFIX="$PREFIX"
@@ -318,7 +320,19 @@ install_julius() {
 # --- install julius model and lexicon   ------------------------------------
 
 install_julius_modlex() {
-  :
+  cd "$PREFIX/src"
+  [ ! -f "VoxForge.tgz" ] && \
+    wget "http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Lexicon/VoxForge.tgz"
+
+  mkdir "$PREFIX/lib/julius-models"
+  tar -xzf "VoxForge.tgz" --strip-components=1 \
+                          -C "$PREFIX/lib/julius-models" VoxForge/VoxForgeDict
+
+  [ ! -f "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz" ] && \
+  wget "http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/0.9.0/Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz"
+
+  tar -xzf "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz" \
+      -C "$PREFIX/lib/julius-models" hmmdefs tiedlist
 }
 
 # --- install festival   -----------------------------------------------------
@@ -362,13 +376,17 @@ install_espeak() {
 # --- finalize   -------------------------------------------------------------
 
 install_finalize() {
-  chown -R root:staff /usr/local/src/*
+  if [ "$PREFIX" = "/usr/local" ]; then
+    chown -R root:staff "$PREFIX/src/"*
+  else
+    chown -R root:root "$PREFIX/src/"*
+  fi
 }
 
 # --- cleanup   --------------------------------------------------------------
 
 install_cleanup() {
-  rm -fr /usr/local/src/*
+  rm -fr "$PREFIX/src"/*
 }
 
 # --- install system service   -----------------------------------------------
