@@ -104,15 +104,6 @@ install_user() {
 # --- install jasper   -------------------------------------------------------
 
 install_jasper() {
-  # add default profile for jasper
-  mkdir /etc/jasper
-  if [ -f "profile.yml" ]; then
-    cp profile.yml /etc/jasper
-    chown root:root /etc/jasper
-  else
-    msg "warning: could not find profile.yml"
-  fi
-
   # install jasper and it's rewquirements
   cd ${PREFIX}/lib
   if [ ! -d jasper ]; then
@@ -120,6 +111,14 @@ install_jasper() {
   fi
   pip install --upgrade setuptools
   pip install -r jasper/client/requirements.txt
+
+  # add default profile for jasper
+  if [ -f "profile.yml" ]; then
+    cp profile.yml $PREFIX/lib/jasper
+  else
+    msg "warning: could not find profile.yml"
+  fi
+
   chown -R $USER_ADD:$USER_ADD "$PREFIX/lib/jasper"
   chmod +x "jasper/jasper.py"
 
@@ -149,14 +148,14 @@ install_pocketsphinx() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_STT" = "pocketsphinx" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 stt_engine: sphinx
 pocketsphinx:
   fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
   hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #stt_engine: sphinx
 #pocketsphinx:
 #  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
@@ -344,11 +343,11 @@ install_julius() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_STT" = "julius" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 stt_engine: julius
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #stt_engine: julius
 EOF
   fi
@@ -373,14 +372,14 @@ install_julius_modlex() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_STT" = "julius" ]; then
-    cat >> /etc/jasper/profile.yml <<EOF
+    cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 julius:
   hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
   tiedlist: '$PREFIX/lib/julius-models/tiedlist'
   lexicon: '$PREFIX/lib/julius-models'
 EOF
   else
-    cat >> /etc/jasper/profile.yml <<EOF
+    cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #julius:
 #  hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
 #  tiedlist: '$PREFIX/lib/julius-models/tiedlist'
@@ -396,11 +395,11 @@ install_festival() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "festival" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: festival-tts
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: festival-tts
 EOF
   fi
@@ -413,13 +412,13 @@ install_flite() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "flite" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: flite-tts
 flite-tts:
   voice: 'slt'
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: flite-tts
 #flite-tts:
 #  voice: 'slt'
@@ -434,11 +433,11 @@ install_svoxpico() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "svoxpico" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: pico-tts
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: pico-tts
 EOF
   fi
@@ -452,11 +451,11 @@ install_google_tts() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "google" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: google-tts
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: google-tts
 EOF
   fi
@@ -470,7 +469,7 @@ install_ivona() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "ivona" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: ivona-tts
 ivona-tts:
   # Keys can be obtained via:
@@ -483,7 +482,7 @@ ivona-tts:
   sentence_break: 400 # optional
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: ivona-tts
 #ivona-tts:
 #  # Keys can be obtained via:
@@ -505,7 +504,7 @@ install_espeak() {
 
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "espeak" ]; then
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 tts-engine: espeak-tts
 espeak-tts:
   voice: 'default+m3'
@@ -513,7 +512,7 @@ espeak-tts:
   words_per_minute: 120
 EOF
   else
-cat >> /etc/jasper/profile.yml <<EOF
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
 #tts-engine: espeak-tts
 #espeak-tts:
 #  voice: 'default+m3'
@@ -538,7 +537,7 @@ install_finalize() {
   msg "info: copying profile.yml to default user $DEFAULT_USER"
   if [ -n "$DEFAULT_USER" -a -d "$HOME/$DEFAULT_USER" ]; then
     mkdir -p "$HOME/$DEFAULT_USER/.jasper"
-    cp /etc/jasper/profile.yml "$HOME/$DEFAULT_USER/.jasper"
+    cp $PREFIX/lib/jasper/profile.yml "$HOME/$DEFAULT_USER/.jasper"
     chown -R --reference="$HOME/$DEFAULT_USER" "$HOME/$DEFAULT_USER/.jasper"
   fi
 
