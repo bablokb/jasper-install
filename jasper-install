@@ -56,7 +56,7 @@ install_upgrade() {
 # --- install more swap-space (needed for compiles)   ------------------------
 
 install_swap() {
-  sed -i -e 's/100/1024/' /etc/dphys-swapfile
+  echo "CONF_SWAPSIZE=1024" > /etc/dphys-swapfile
   /sbin/dphys-swapfile swapoff
   /sbin/dphys-swapfile setup
   /sbin/dphys-swapfile swapon
@@ -413,6 +413,7 @@ EOF
 
 install_finalize() {
   # fix ownership of source
+  msg "info: fixing ownership of files below $PREFIX"
   if [ "$PREFIX" = "/usr/local" ]; then
     chown -R root:staff "$PREFIX/src" "$PREFIX/lib"
   else
@@ -420,11 +421,19 @@ install_finalize() {
   fi
 
   # copy profile.yml to directory of default user
-  if [ -n "$DEFAULT_USER" ]; then
+  msg "info: copying profile.yml to default user $DEFAULT_USER"
+  if [ -n "$DEFAULT_USER" -a -d "$HOME/$DEFAULT_USER" ]; then
     mkdir -p "$HOME/$DEFAULT_USER/.jasper"
     cp /etc/jasper/profile.yml "$HOME/$DEFAULT_USER/.jasper"
     chown -R --reference="$HOME/$DEFAULT_USER" "$HOME/$DEFAULT_USER/.jasper"
   fi
+
+  # reset swap
+  msg "info: resetting swap-size"
+  echo "CONF_SWAPSIZE=100" > /etc/dphys-swapfile
+  /sbin/dphys-swapfile swapoff
+  /sbin/dphys-swapfile setup
+  /sbin/dphys-swapfile swapon
 }
 
 # --- cleanup   --------------------------------------------------------------
