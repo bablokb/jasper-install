@@ -33,6 +33,14 @@ if [ "$UID" != "0" ]; then
   exit 3
 fi
 
+# check free disk space   ----------------------------------------------------
+
+let size=`stat -f -c "%S*%f/1024/1024" /`
+if [ $size -lt 4000 ]; then
+  echo "error: you need at least 4GB free disk space to run this script!" >&2
+  exit 3
+fi
+
 # write message   ------------------------------------------------------------
 
 msg() {
