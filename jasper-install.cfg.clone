@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Sample configuration file for jasper-install (clone installation).
+# Overwrite configuration file for jasper-install (clone installation).
 #
 # Please read the documentation for instructions.
 #
@@ -11,34 +11,32 @@
 #
 # -----------------------------------------------------------------------------
 
-LOGFILE="./jasper-install.log"
-PREFIX="/usr/local"                     # target installation directory
+# include basic configuration
+# read configuration
+: ${CFG_FILE:=$0.cfg}
+if [ -f "$CFG_FILE" ]; then
+   source "$CFG_FILE"
+else
+   echo "error: could not find $CFG_FILE!"
+   exit 3
+fi
 
-GID_ADD=4010
-GROUP_ADD=jasper
-UID_ADD=4010
-USER_ADD=jasper
-USER_PWD=jasper
-
-SPHINX_VERSION=0.8
-OPENFST_VERSION="1.3.4"
-M2M_ALIGNER_VERSION="1.2"
-MITLM_VERSION="0.4.1"
-PHONETISAURUS_VERSION="0.8a"
-JULIUS_VERSION="4.3.1"
-
-INSTALL_update=0
-INSTALL_upgrade=0
-INSTALL_swap=0
-INSTALL_devtools=0
-
-INSTALL_alsa=0
-INSTALL_user=0
+# turn on everything you also turned on in the original installation
 INSTALL_jasper=1              # required
-
-# STT-engines (one required)
-# Pocketsphinx and prereqs
 INSTALL_pocketsphinx=1
+INSTALL_julius=1
+INSTALL_julius_modlex=1
+
+INSTALL_espeak=1
+INSTALL_festival=1
+INSTALL_flite=1
+INSTALL_svoxpico=1
+INSTALL_google_tts=1
+INSTALL_ivona=1
+
+# everything turned off here: this is cloned from the original installation
+# (copy of $PREFIX-directory)
+
 INSTALL_pocketsphinx_src=0
 INSTALL_CMUCLMTK=0
 INSTALL_openfst=0
@@ -48,19 +46,3 @@ INSTALL_phonetisaurus=0
 INSTALL_phonetisaurus_exp=0
 INSTALL_phonetisaurus_fst=0
 
-# Julius
-INSTALL_julius=1
-INSTALL_julius_modlex=1
-
-# TTS-engines (one required)
-INSTALL_espeak=1
-INSTALL_festival=1
-INSTALL_flite=1
-INSTALL_svoxpico=1
-INSTALL_google_tts=1
-INSTALL_ivona=1
-
-# some post-install work
-INSTALL_finalize=1            # required
-INSTALL_service=0             # optional
-INSTALL_cleanup=0             # optional
