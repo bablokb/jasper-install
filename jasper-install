@@ -138,6 +138,23 @@ install_pocketsphinx() {
     rm -f /etc/apt/sources.list.d/jessie.list
     apt-get update
   fi
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_STT" = "pocketsphinx" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+stt_engine: sphinx
+pocketsphinx:
+  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
+  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#stt_engine: sphinx
+#pocketsphinx:
+#  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
+#  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
+EOF
+  fi
 }
 
 # --- install pocket-sphinx from source   -----------------------------------
@@ -371,15 +388,42 @@ install_ivona() {
 
 install_espeak() {
   apt-get -y install espeak
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "espeak" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: espeak-tts
+espeak-tts:
+  voice: 'default+m3'
+  pitch_adjustment: 40
+  words_per_minute: 120
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: espeak-tts
+#espeak-tts:
+#  voice: 'default+m3'
+#  pitch_adjustment: 40
+#  words_per_minute: 120
+EOF
+  fi
 }
 
 # --- finalize   -------------------------------------------------------------
 
 install_finalize() {
+  # fix ownership of source
   if [ "$PREFIX" = "/usr/local" ]; then
-    chown -R root:staff "$PREFIX/src/"*
+    chown -R root:staff "$PREFIX/src" "$PREFIX/lib"
   else
-    chown -R root:root "$PREFIX/src/"*
+    chown -R root:root "$PREFIX/src" "$PREFIX/lib"
+  fi
+
+  # copy profile.yml to directory of default user
+  if [ -n "$DEFAULT_USER" ]; then
+    mkdir -p "$HOME/$DEFAULT_USER/.jasper"
+    cp /etc/jasper/profile.yml "$HOME/$DEFAULT_USER/.jasper"
+    chown -R --reference="$HOME/$DEFAULT_USER" "$HOME/$DEFAULT_USER/.jasper"
   fi
 }
 
