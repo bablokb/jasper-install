@@ -429,6 +429,16 @@ EOF
 
 install_svoxpico() {
   apt-get -y install libttspico-utils
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "svoxpico" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: pico-tts
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: pico-tts
+EOF
 }
 
 # --- install google TTS   ---------------------------------------------------
