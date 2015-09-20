@@ -467,6 +467,35 @@ EOF
 install_ivona() {
   apt-get -y install python-pymad
   pip install --upgrade pyvona
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "ivona" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: ivona-tts
+ivona-tts:
+  # Keys can be obtained via:
+  # https://www.ivona.com/us/account/speechcloud/creation/
+  access_key: 'access_key' # required
+  secret_key: 'secret_key' # required
+  voice: 'Eric' # optional, default is 'Brian'
+  region: 'eu-west' # optional, default is 'us-east'
+  speech_rate: 'medium' # optional
+  sentence_break: 400 # optional
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: ivona-tts
+#ivona-tts:
+#  # Keys can be obtained via:
+#  # https://www.ivona.com/us/account/speechcloud/creation/
+#  access_key: 'access_key' # required
+#  secret_key: 'secret_key' # required
+#  voice: 'Eric' # optional, default is 'Brian'
+#  region: 'eu-west' # optional, default is 'us-east'
+#  speech_rate: 'medium' # optional
+#  sentence_break: 400 # optional
+EOF
+  fi
 }
 
 # --- install espeak   -------------------------------------------------------
