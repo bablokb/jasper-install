@@ -409,6 +409,20 @@ EOF
 
 install_flite() {
   apt-get -y install flite
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "flite" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: flite-tts
+flite-tts:
+  voice: 'slt'
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: flite-tts
+#flite-tts:
+#  voice: 'slt'
+EOF
 }
 
 # --- install svox pico   ---------------------------------------------------
