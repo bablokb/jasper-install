@@ -26,9 +26,10 @@ support files in the root-directory of the project. Configuration is
 done using the file `jasper-install.cfg`.
 
 The file contains constants used by the installation program. Usually you
-don't have to change any contstants except those named `INSTALL_xxx`. These
-constants select which modules the install script actually installs. You can
-set the value of these constants to `0` (don't install) or `1` (install).
+don't have to change any contstants except the value of `DEFAULT_USER` and
+those named `INSTALL_xxx`. These constants select which modules the install
+script actually installs. You can set the value of these constants to `0`
+(don't install) or `1` (install).
 
 Some of these modules do just basic tasks, so you should not change the
 value - these constants are labelled *required*. Besides these modules, you
@@ -96,6 +97,8 @@ Jasper's project site:
 Cloning the installation
 ------------------------
 
+** this does not work yet! **
+
 Since download and compile of all the prerequisite packages takes
 so long, you can take a shortcut to clone Jasper to other computers.
 
@@ -107,28 +110,35 @@ The following steps are necessary:
 
          sudo rsync -avz /usr/local/ root@clone:/usr/local
 
-  2. Clone or copy all `jasper-install`-files to the target computer.
-  3. Delete `jasper-install.cfg` and rename `jasper-install.cfg.clone`
-     to `jasper-install.cfg`.
+  2. Copy all `jasper-install`-files to the target computer.
+  3. Edit `jasper-install.cfg.clone` to reflect your `jasper-install.cfg`
+     (read the comments in `jasper-install.cfg.clone`).
   4. Run
 
-         sudo ./jasper-install all
+         sudo ./jasper-install -C jasper-install.cfg.clone all
 
 
 Running jasper
 --------------
 
 To run jasper as a foreground process from your normal user account
-(you did change the default user from `pi`, didn't you?), you should
-create the file `~/.japser/profile.yml`. Either use
-`$PREFIX/lib/jasper/config/profile.yml` as a template, or run
+just run the command `jasper`. If you like to see how jasper processes
+your commands, run
+
+    jasper --debug
+
+Note that the install-script will create a default jasper configuration 
+profile for the default user (as defined in `jasper-install.cfg`).
+If you are not happy with the profile, you can delete it and run
 
     $PREFIX/lib/jasper/client/populate.py
 
-You can find details about the initial configuration on the Jasper
+This will run you through the default configuration provided by jaser
+itself. You can find details about the initial configuration on the Jasper
 [project website](http://jasperproject.github.io/ "project website").
 
-As an alternative, you can install jasper as a system-service. Change
+As an alternative, you can install jasper as a system-service. 
+If not already done during installation, change
 `INSTALL_service` in `jasper-install.cfg` to `1` and run
 
     sudo ./jasper-install service
