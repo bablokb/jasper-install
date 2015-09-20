@@ -353,10 +353,10 @@ install_julius_modlex() {
   tar -xzf "VoxForge.tgz" --strip-components=1 \
                           -C "$PREFIX/lib/julius-models" VoxForge/VoxForgeDict
 
-  [ ! -f "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz" ] && \
-  wget "http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/0.9.0/Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz"
+  [ ! -f "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" ] && \
+  wget "http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/$JULIUS_AM_VERSION/Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz"
 
-  tar -xzf "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_(0.9.0).tgz" \
+  tar -xzf "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" \
       -C "$PREFIX/lib/julius-models" hmmdefs tiedlist
 }
 
