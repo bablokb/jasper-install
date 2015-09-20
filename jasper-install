@@ -123,7 +123,7 @@ install_jasper() {
   chmod +x "jasper/jasper.py"
 
   # install wrapper script
-  echo > "$PREFIX/bin/jasper" <<EOF
+  cat > "$PREFIX/bin/jasper" <<EOF
 #!/bin/bash
 $PREFIX/lib/jasper/jasper.py
 EOF
