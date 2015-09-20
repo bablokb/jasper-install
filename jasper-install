@@ -403,6 +403,7 @@ EOF
 cat >> /etc/jasper/profile.yml <<EOF
 #tts-engine: festival-tts
 EOF
+  fi
 }
 
 # --- install flite   --------------------------------------------------------
@@ -423,6 +424,7 @@ cat >> /etc/jasper/profile.yml <<EOF
 #flite-tts:
 #  voice: 'slt'
 EOF
+  fi
 }
 
 # --- install svox pico   ---------------------------------------------------
@@ -439,6 +441,7 @@ EOF
 cat >> /etc/jasper/profile.yml <<EOF
 #tts-engine: pico-tts
 EOF
+  fi
 }
 
 # --- install google TTS   ---------------------------------------------------
@@ -446,6 +449,17 @@ EOF
 install_google_tts() {
   apt-get -y install python-pymad
   pip install --upgrade gTTS
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "google" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: google-tts
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: google-tts
+EOF
+  fi
 }
 
 # --- install ivona   --------------------------------------------------------
