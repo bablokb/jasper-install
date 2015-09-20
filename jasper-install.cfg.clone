@@ -22,6 +22,8 @@ else
 fi
 
 # turn on everything you also turned on in the original installation
+# (use your values from jasper-install.cfg)
+
 INSTALL_jasper=1              # required
 INSTALL_pocketsphinx=1
 INSTALL_julius=1
