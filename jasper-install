@@ -393,6 +393,16 @@ EOF
 
 install_festival() {
   apt-get -y install festival festvox-don
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_TTS" = "festival" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+tts-engine: festival-tts
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#tts-engine: festival-tts
+EOF
 }
 
 # --- install flite   --------------------------------------------------------
