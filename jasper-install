@@ -340,6 +340,18 @@ install_julius() {
   ./configure --enable-words-int
   make -j $PMAX
   make install PREFIX="$PREFIX"
+
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_STT" = "julius" ]; then
+cat >> /etc/jasper/profile.yml <<EOF
+stt_engine: julius
+EOF
+  else
+cat >> /etc/jasper/profile.yml <<EOF
+#stt_engine: julius
+EOF
+  fi
 }
 
 # --- install julius model and lexicon   ------------------------------------
@@ -358,6 +370,23 @@ install_julius_modlex() {
 
   tar -xzf "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" \
       -C "$PREFIX/lib/julius-models" hmmdefs tiedlist
+
+  # add configuration to profile.yml
+  if [ "$ACTIVE_STT" = "julius" ]; then
+    cat >> /etc/jasper/profile.yml <<EOF
+julius:
+  hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
+  tiedlist: '$PREFIX/lib/julius-models/tiedlist'
+  lexicon: '$PREFIX/lib/julius-models'
+EOF
+  else
+    cat >> /etc/jasper/profile.yml <<EOF
+#julius:
+#  hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
+#  tiedlist: '$PREFIX/lib/julius-models/tiedlist'
+#  lexicon: '$PREFIX/lib/julius-models'
+EOF
+  fi
 }
 
 # --- install festival   -----------------------------------------------------
