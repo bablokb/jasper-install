@@ -146,3 +146,5 @@ If not already done during installation, change
 
 The last command is only necessary if you want to start the service at once.
 Otherwise, it is automatically started at boot-time.
+
+The configuration file for the service is in `$PREFIX/lib/jasper/profile.yml`.
