@@ -125,7 +125,7 @@ install_jasper() {
   # install wrapper script
   cat > "$PREFIX/bin/jasper" <<EOF
 #!/bin/bash
-$PREFIX/lib/jasper/jasper.py
+$PREFIX/lib/jasper/jasper.py "\$@"
 EOF
   chown root:staff "$PREFIX/bin/jasper"
   chmod +x "$PREFIX/bin/jasper"
