@@ -119,7 +119,6 @@ install_jasper() {
     msg "warning: could not find profile.yml"
   fi
 
-  chown -R $USER_ADD:$USER_ADD "$PREFIX/lib/jasper"
   chmod +x "jasper/jasper.py"
 
   # install wrapper script
@@ -532,13 +531,14 @@ install_finalize() {
   else
     chown -R root:root "$PREFIX/src" "$PREFIX/lib"
   fi
+  chown -R $USER_ADD:$USER_ADD "$PREFIX/lib/jasper"
 
   # copy profile.yml to directory of default user
   msg "info: copying profile.yml to default user $DEFAULT_USER"
-  if [ -n "$DEFAULT_USER" -a -d "$HOME/$DEFAULT_USER" ]; then
-    mkdir -p "$HOME/$DEFAULT_USER/.jasper"
-    cp $PREFIX/lib/jasper/profile.yml "$HOME/$DEFAULT_USER/.jasper"
-    chown -R --reference="$HOME/$DEFAULT_USER" "$HOME/$DEFAULT_USER/.jasper"
+  if [ -n "$DEFAULT_USER" -a -d "/home/$DEFAULT_USER" ]; then
+    mkdir -p "/home/$DEFAULT_USER/.jasper"
+    cp $PREFIX/lib/jasper/profile.yml "/home/$DEFAULT_USER/.jasper"
+    chown -R --reference="/home/$DEFAULT_USER" "/home/$DEFAULT_USER/.jasper"
   fi
 
   # reset swap
