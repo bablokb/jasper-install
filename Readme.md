@@ -43,7 +43,11 @@ Install Jasper
 
 The installation script `jasper-install` assumes that you start of with
 a *clean* installation of Raspbian-Wheezy (after initial configuration
-with `raspi-config`). A simple
+with `raspi-config`). You need at least 4 GB free disk-space on the
+root-partition, i.e. a 8GB (micro-) SDHC with expanded root-partition
+should do fine.
+
+A simple
 
     sudo ./jasper-install all
 
@@ -63,6 +67,10 @@ To monitor the progress in this case, you can use the command
 
     tail -f jasper-install.log
 
+or
+
+    grep "info:" jaspler-install.log
+
 Note that `jasper-install` takes a lot of time to finish (this also
 depends on the configured modules). Running Raspbian off of an HDD/SDD
 really speeds things up. Search the web for instructions on how to move
@@ -75,6 +83,24 @@ management system of Debian (*apt*). Others are downloaded and compiled
 from source. All files are installed below `$PREFIX`, which defaults to
 `/usr/local`, i.e. you can copy this directory to other computers to
 save some time during installation (see section below on details).
+
+
+Some Timings
+------------
+
+As noted above, the whole `jasper-install` script takes a long time to
+finish. A complete installation will take
+
+  - 7.25h on a Raspberry Pi Model 1
+  - ?.??h on a Raspberry Pi Model 2
+  - ?.??h on a Raspberry Pi Model 1 with a root-filesystem on a SDD
+  - ?.??h on a Raspberry Pi Model 2 with a root-filesystem on a SDD
+
+Timings depend on the speed of your SDHC-cards as well as the speed
+of your internet connection. OpenFST is the module taking longest,
+compile and linking of it alone takes more than 5h on a model 1
+(about 2h on a model 2).
+
 
 
 Changes to the original install instructions
