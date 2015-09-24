@@ -91,10 +91,10 @@ Some Timings
 As noted above, the whole `jasper-install` script takes a long time to
 finish. A complete installation will take
 
-  - 7.25h on a Raspberry Pi Model 1
-  - ?.??h on a Raspberry Pi Model 2
-  - ?.??h on a Raspberry Pi Model 1 with a root-filesystem on a SDD
-  - ?.??h on a Raspberry Pi Model 2 with a root-filesystem on a SDD
+  - 7-8h on a Raspberry Pi Model 1
+  - 3-4h on a Raspberry Pi Model 2
+  - ?.?h on a Raspberry Pi Model 1 with a root-filesystem on a SDD
+  - ?.?h on a Raspberry Pi Model 2 with a root-filesystem on a SDD
 
 Timings depend on the speed of your SDHC-cards as well as the speed
 of your internet connection. OpenFST is the module taking longest,
@@ -118,7 +118,8 @@ Jasper's project site:
   - New download-address for phonetisaurus
   - only compile necessary binary for phonetisaurus
   - New download-address for phonetisaurus FST model
-
+  - create default profile.yml with all configuration-options
+    (non-active STT/TTS-engines are added as comments)
 
 Cloning the installation
 ------------------------
@@ -148,7 +149,8 @@ Running jasper
 --------------
 
 To run jasper as a foreground process from your normal user account
-just run the command `jasper`. If you like to see how jasper processes
+just run the command `jasper` (your user account must be a member of 
+the `audio` group). If you like to see how jasper processes
 your commands, run
 
     jasper --debug
@@ -174,3 +176,7 @@ The last command is only necessary if you want to start the service at once.
 Otherwise, it is automatically started at boot-time.
 
 The configuration file for the service is in `$PREFIX/lib/jasper/profile.yml`.
+
+Sometimes, the service has problems to start right after installation and
+reboot. In this case, delete the directory `$PREFIX/lib/jasper/vocabularies`
+and restart the service.
