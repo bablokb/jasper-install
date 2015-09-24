@@ -1,52 +1,25 @@
 TODOs for jasper-install
 ========================
 
+- add processArguments
+  - options -C cfgfile, -f force, -h help etc.
+  - update readme regarding cloning
+
 - verify system-service jasper
   * start, status, stop
   * amount of text written to syslog?
 
 - add install-scripts for other engines
-  * add module initd (add to init-system)
-  * Julius STT (add install for acoustic model and lexicon)
-  * German acoustic modules?
-
-- verify modules
-  * swap
-  * update (182s) ok
-  * upgrade ??
-  * devtools (1438s) ok
-  * alsa (4s) ok
-  * user (17s) ok
-  * jasper (443s) ok
-  * pocketsphinx (316s) ok
-  * pocketsphinx_src
-  * CMUCLMTK (637s) ok
-  * openfst (ok)
-  * m2m_aligner (67s) ok
-  * mitlm (348s) ok
-  * phonetisaurus (405s) ok
-  * phonetisaurus_fst (166s) ok
-  * espeak (103) ok
-
-  * phonetisaurus_exp
-  * julius
-  * julius_modlex
-  * festival (165s) ok
-  * flite (64s) ok
-  * svoxpico (2s) ok
-  * google_tts (113s) ok
-  * ivona (8s) ok
-
-- add timing information to Readme.md
-
+  * German acoustic modules
+    - sphinx
+    - julius
+      http://www.repository.voxforge1.org/downloads/de/Trunk/Lexicon/Lexicon.tgz
+     http://www.repository.voxforge1.org/downloads/de/Trunk/AcousticModels/voxforge_de_simon-2010-04-21.tgz
 
 Later
 -----
 
 - add option "-f" to force install of a module
-
-- add configuration to only install packages using apt (for cloning
-  of the installation to other systems)
 
 - check if packages from base are runtime or pure buildtime
   (python-pyaudio seems the only runtime package)
