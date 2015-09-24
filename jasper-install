@@ -113,10 +113,11 @@ install_jasper() {
   pip install -r jasper/client/requirements.txt
 
   # add default profile for jasper
+  cd -
   if [ -f "profile.yml" ]; then
     cp profile.yml $PREFIX/lib/jasper
   else
-    msg "warning: could not find profile.yml"
+    msg "error: could not find profile.yml"
   fi
 
   chmod +x "jasper/jasper.py"
@@ -124,6 +125,7 @@ install_jasper() {
   # install wrapper script
   cat > "$PREFIX/bin/jasper" <<EOF
 #!/bin/bash
+export LD_LIBRARY_PATH="$PREFIX/lib"
 $PREFIX/lib/jasper/jasper.py "\$@"
 EOF
   chown root:staff "$PREFIX/bin/jasper"
@@ -140,6 +142,8 @@ install_pocketsphinx() {
     echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' > \
          /etc/apt/sources.list.d/jessie.list
     apt-get update
+    # the following command also pulls in
+    # pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
     apt-get -y --force-yes -t jessie install pocketsphinx python-pocketsphinx
     rm -f /etc/apt/sources.list.d/jessie.list
     apt-get update
@@ -166,6 +170,11 @@ EOF
 # --- install pocket-sphinx from source   -----------------------------------
 
 install_pocketsphinx_src() {
+
+  # english data for pocketsphinx
+  apt-get -y install pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
+
+  # sphinxbase
   mkdir -p /usr/local/src
   cd /usr/local/src
   [ ! -f sphinxbase-${SPHINX_VERSION}.tar.gz ] && \
@@ -181,6 +190,7 @@ install_pocketsphinx_src() {
   make -j $PMAX
   make install PREFIX="$PREFIX"
 
+  # pocketsphinx
   cd /usr/local/src
   [ ! -f pocketsphinx-${SPHINX_VERSION}.tar.gz ] && \
     wget http://downloads.sourceforge.net/project/cmusphinx/pocketsphinx/${SPHINX_VERSION}/pocketsphinx-${SPHINX_VERSION}.tar.gz
@@ -363,10 +373,10 @@ install_julius_modlex() {
   tar -xzf "VoxForge.tgz" --strip-components=1 \
                           -C "$PREFIX/lib/julius-models" VoxForge/VoxForgeDict
 
-  [ ! -f "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" ] && \
-  wget "http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/$JULIUS_AM_VERSION/Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz"
+  [ ! -f "Julius_AcousticModels_16kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" ] && \
+  wget "http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/$JULIUS_AM_VERSION/Julius_AcousticModels_16kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz"
 
-  tar -xzf "Julius_AcousticModels_8kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" \
+  tar -xzf "Julius_AcousticModels_16kHz-16bit_MFCC_O_D_($JULIUS_AM_VERSION).tgz" \
       -C "$PREFIX/lib/julius-models" hmmdefs tiedlist
 
   # add configuration to profile.yml
@@ -375,7 +385,7 @@ install_julius_modlex() {
 julius:
   hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
   tiedlist: '$PREFIX/lib/julius-models/tiedlist'
-  lexicon: '$PREFIX/lib/julius-models'
+  lexicon: '$PREFIX/lib/julius-models/VoxForgeDict'
 EOF
   else
     cat >> $PREFIX/lib/jasper/profile.yml <<EOF
@@ -395,11 +405,11 @@ install_festival() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "festival" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: festival-tts
+tts_engine: festival-tts
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: festival-tts
+#tts_engine: festival-tts
 EOF
   fi
 }
@@ -412,13 +422,13 @@ install_flite() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "flite" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: flite-tts
+tts_engine: flite-tts
 flite-tts:
   voice: 'slt'
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: flite-tts
+#tts_engine: flite-tts
 #flite-tts:
 #  voice: 'slt'
 EOF
@@ -433,11 +443,11 @@ install_svoxpico() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "svoxpico" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: pico-tts
+tts_engine: pico-tts
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: pico-tts
+#tts_engine: pico-tts
 EOF
   fi
 }
@@ -451,11 +461,11 @@ install_google_tts() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "google" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: google-tts
+tts_engine: google-tts
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: google-tts
+#tts_engine: google-tts
 EOF
   fi
 }
@@ -469,7 +479,7 @@ install_ivona() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "ivona" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: ivona-tts
+tts_engine: ivona-tts
 ivona-tts:
   # Keys can be obtained via:
   # https://www.ivona.com/us/account/speechcloud/creation/
@@ -482,7 +492,7 @@ ivona-tts:
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: ivona-tts
+#tts_engine: ivona-tts
 #ivona-tts:
 #  # Keys can be obtained via:
 #  # https://www.ivona.com/us/account/speechcloud/creation/
@@ -504,7 +514,7 @@ install_espeak() {
   # add configuration to profile.yml
   if [ "$ACTIVE_TTS" = "espeak" ]; then
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-tts-engine: espeak-tts
+tts_engine: espeak-tts
 espeak-tts:
   voice: 'default+m3'
   pitch_adjustment: 40
@@ -512,7 +522,7 @@ espeak-tts:
 EOF
   else
 cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#tts-engine: espeak-tts
+#tts_engine: espeak-tts
 #espeak-tts:
 #  voice: 'default+m3'
 #  pitch_adjustment: 40
