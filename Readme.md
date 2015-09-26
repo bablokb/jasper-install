@@ -133,7 +133,7 @@ Jasper's project site:
 Cloning the installation
 ------------------------
 
-** this does not work yet! **
+**this does not work yet!**
 
 Since download and compile of all the prerequisite packages takes
 so long, you can take a shortcut to clone Jasper to other computers.
@@ -174,7 +174,7 @@ If you are not happy with the profile, you can delete it and run
 This will run you through the default configuration provided by jaser
 itself. You can find details about the initial configuration on the
 [Jasper project website](http://jasperproject.github.io/
-"Jasper project website".
+"Jasper project website").
 
 As an alternative, you can install jasper as a system-service. 
 If not already done during installation, change
