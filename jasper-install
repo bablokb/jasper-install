@@ -1,7 +1,7 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
 # This script installs all software components to run Jasper. This script
-# mainly translates the textual instruchtions on the Jasper project site
+# mainly translates the textual instructions on the Jasper project site
 # to script code.
 #
 # This file is part of the project http://github.com/bablokb/jasper-install
@@ -98,7 +98,6 @@ install_user() {
   adduser --system --disabled-login --gecos "" --no-create-home \
               --group --home "$PREFIX/lib/jasper"  $USER_ADD
   adduser $USER_ADD audio
-
 }
 
 # --- install jasper   -------------------------------------------------------
