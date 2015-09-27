@@ -17,6 +17,9 @@
 # number of processors to use
 : ${PMAX:=`ls -1d /sys/devices/system/cpu/cpu[0-9]* | wc -l`}
 
+# directory of this script and all support-files
+SRC_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
 # read configuration
 : ${CFG_FILE:=$0.cfg}
 if [ -f "$CFG_FILE" ]; then
@@ -112,9 +115,8 @@ install_jasper() {
   pip install -r jasper/client/requirements.txt
 
   # add default profile for jasper
-  cd -
-  if [ -f "profile.yml" ]; then
-    cp profile.yml $PREFIX/lib/jasper
+  if [ -f "$SRC_PATH/profile.yml" ]; then
+    cp "$SRC_PATH/profile.yml" "$PREFIX/lib/jasper"
   else
     msg "error: could not find profile.yml"
   fi
@@ -575,6 +577,16 @@ install_service() {
   else
     msg "error: could not find service-script jasper"
   fi
+}
+
+# --- replace JASPER with THOMAS   -------------------------------------------
+
+install_thomas() {
+  # patch listening word
+  sed -i -e '/Conversation(/s/JASPER/THOMAS/' "$PREFIX/lib/jasper/jasper.py"
+
+  # update files
+  cp "$SRC_PATH"/thomas/* "$PREFIX/lib/jasper/static"
 }
 
 # --- install a module   -----------------------------------------------------
