@@ -191,3 +191,17 @@ The configuration file for the service is in `$PREFIX/lib/jasper/profile.yml`.
 Sometimes, the service has problems to start right after installation and
 reboot. In this case, delete the directory `$PREFIX/lib/jasper/vocabularies`
 and restart the service.
+
+
+Renaming Jasper
+---------------
+
+If you have trouble pronouncing "Jasper", then you can change the
+signal word from "Jasper" to "Thomas". You just have to define
+`INSTALL_thomas=1` in `jasper-install.cfg`. Note that this changes
+the file `$PREFIX/lib/jasper/jasper.py` and some files in
+`"$PREFIX/lib/jasper/static`. If you want to return to the original
+state, you should fetch the files from Jasper's Github-project.
+
+If you prefer a different name, you should follow the instructions on
+the project website of Jasper.
