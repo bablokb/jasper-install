@@ -12,37 +12,85 @@
 #
 # -----------------------------------------------------------------------------
 
-# global constants   ---------------------------------------------------------
+# usage message   -------------------------------------------------------------
 
-# number of processors to use
-: ${PMAX:=`ls -1d /sys/devices/system/cpu/cpu[0-9]* | wc -l`}
+usage() {
+  local pgm=`basename $0`
+  echo -e "\n$pgm: install japser and it's prereqs\n\
+  \nusage: $pgm [options] all | module ...\n\
+  Possible options:\n\
+    -C cfgfile  use cfgfile instead of jasper-install.cfg as config-file\n\
+    -L logfile  use logfile instead of jasper-install.log as log-file\n\
+    -f          force installation\n\
+    -S          don't install, just print a summary of last installation\n\
+    -h          show this help\n\
+"
+  exit 3
+}
 
-# directory of this script and all support-files
-SRC_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+# set defaults   --------------------------------------------------------------
 
-# read configuration
-: ${CFG_FILE:=$0.cfg}
-if [ -f "$CFG_FILE" ]; then
-   source "$CFG_FILE"
-else
-   echo "error: could not find $CFG_FILE!"
+setDefaults() {
+  cfgFile="$0.cfg"
+  logFile="$0.log"
+  force=0
+  summaryOnly=0
+  allModules=1
+
+  # number of processors to use
+  : ${PMAX:=`ls -1d /sys/devices/system/cpu/cpu[0-9]* | wc -l`}
+
+  # directory of this script and all support-files
+  SRC_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+}
+
+# parse arguments and set variables -------------------------------------------
+
+parseArguments() {
+  while getopts ":C:L:fSh" opt; do
+    case $opt in
+      C) cfgFile="$OPTARG";;
+      L) logFile="$OPTARG";;
+      f) force=1;;
+      S) summaryOnly=1;;
+      h) usage;;
+      ?) echo "error: illegal option: $OPTARG"
+           usage;;
+    esac
+  done
+  shift $((OPTIND-1))
+
+  if [ "$1" = "all" ]; then
+    # extract module list from this file
+    moduleList=$(sed -ne '/^install_/s/install_\(.*\)(.*/\1/p' "$0")
+  else
+    # use modules from the command line
+    moduleList="$@"
+    allModules=0
+  fi
+}
+
+# check arguments   -----------------------------------------------------------
+
+checkArguments() {
+  if [ "$UID" != "0" ]; then
+    echo "error: you need to be root to run this script!" >&2
+    exit 3
+  fi
+  if [ ! -f "$cfgFile" ]; then
+   echo "error: could not find $cfgFile!"
    exit 3
-fi
+  fi
 
-# check uid = 0   ------------------------------------------------------------
-
-if [ "$UID" != "0" ]; then
-  echo "error: you need to be root to run this script!" >&2
-  exit 3
-fi
-
-# check free disk space   ----------------------------------------------------
-
-let size=`stat -f -c "%S*%f/1024/1024" /`
-if [ $size -lt 4000 ]; then
-  echo "error: you need at least 4GB free disk space to run this script!" >&2
-  exit 3
-fi
+  # check free space (override with -f)
+  if [ $force -eq 0 ]; then
+    let size=`stat -f -c "%S*%f/1024/1024" /`
+    if [ $size -lt 4000 ]; then
+      echo "error: you need at least 4GB free disk space to run this script!" >&2
+      exit 3
+    fi
+  fi
+}
 
 # write message   ------------------------------------------------------------
 
@@ -149,31 +197,18 @@ install_pocketsphinx() {
     rm -f /etc/apt/sources.list.d/jessie.list
     apt-get update
   fi
+}
 
-  # add configuration to profile.yml
-  if [ "$ACTIVE_STT" = "pocketsphinx" ]; then
-cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-stt_engine: sphinx
-pocketsphinx:
-  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
-  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
-EOF
-  else
-cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#stt_engine: sphinx
-#pocketsphinx:
-#  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
-#  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
-EOF
-  fi
+# --- install pocket-sphinx english data   ----------------------------------
+
+install_pocketsphinx_data() {
+  # english data for pocketsphinx
+  apt-get -y install pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
 }
 
 # --- install pocket-sphinx from source   -----------------------------------
 
 install_pocketsphinx_src() {
-
-  # english data for pocketsphinx
-  apt-get -y install pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
 
   # sphinxbase
   mkdir -p /usr/local/src
@@ -205,6 +240,27 @@ install_pocketsphinx_src() {
   ./configure
   make -j $PMAX
   make install PREFIX="$PREFIX"
+}
+
+# --- install configuration for pocketsphinx   -------------------------------
+
+install_pocketsphinx_cfg() {
+  # add configuration to profile.yml
+  if [ "$ACTIVE_STT" = "pocketsphinx" ]; then
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
+stt_engine: sphinx
+pocketsphinx:
+  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
+  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
+EOF
+  else
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
+#stt_engine: sphinx
+#pocketsphinx:
+#  fst_model: '$PREFIX/lib/phonetisaurus/g014b2b.fst'
+#  hmm_dir: '/usr/share/pocketsphinx/model/hmm/en_US/hub4wsj_sc_8k'
+EOF
+  fi
 }
 
 # --- install CMUCLMTK   -----------------------------------------------------
@@ -349,18 +405,6 @@ install_julius() {
   ./configure --enable-words-int
   make -j $PMAX
   make install PREFIX="$PREFIX"
-
-
-  # add configuration to profile.yml
-  if [ "$ACTIVE_STT" = "julius" ]; then
-cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-stt_engine: julius
-EOF
-  else
-cat >> $PREFIX/lib/jasper/profile.yml <<EOF
-#stt_engine: julius
-EOF
-  fi
 }
 
 # --- install julius model and lexicon   ------------------------------------
@@ -394,6 +438,21 @@ EOF
 #  hmmdefs: '$PREFIX/lib/julius-models/hmmdefs'
 #  tiedlist: '$PREFIX/lib/julius-models/tiedlist'
 #  lexicon: '$PREFIX/lib/julius-models'
+EOF
+  fi
+}
+
+# --- install configuration for julius   -------------------------------------
+
+install_julius_cfg() {
+  # add configuration to profile.yml
+  if [ "$ACTIVE_STT" = "julius" ]; then
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
+stt_engine: julius
+EOF
+  else
+cat >> $PREFIX/lib/jasper/profile.yml <<EOF
+#stt_engine: julius
 EOF
   fi
 }
@@ -595,11 +654,14 @@ do_install() {
   declare -i start duration
   local var
   var="INSTALL_$module"
-  if [ -z "${!var}" ]; then
+  if [ -z "${!var}" -a $allModules -eq 1 ]; then
     msg "error: INSTALL_$module is unset!"
     return
-  elif [ "${!var}" = "0" ]; then
+  elif [ "${!var}" = "0" -a $allModules -eq 1 ]; then
     msg "info: not installing module $module"
+    return
+  elif [ "${!var}" = "0" -a $force -eq 0 ]; then
+    msg "info: not installing module $module - use option -f to override"
     return
   fi
 
@@ -611,31 +673,36 @@ do_install() {
   msg "info: duration for module $module: $duration sec"
 }
 
+# --- print summary   --------------------------------------------------------
+
+printSummary() {
+  echo -e "\n\nSummary:\n"
+  head -n 1 "$logFile"
+  echo
+  grep "duration for module" "$logFile"
+  echo
+  tail -n 2 "$logFile"
+}
+
 # --- main program   ---------------------------------------------------------
 
-if [ -z "$1" -o "$1" = "-h" ]; then
-  echo -e "usage: $0 all | module [...]" >&2
-  exit 0 
-elif [ "$1" = "all" ]; then
-  # extract module list from this file
-  MODULE_LIST=$(sed -ne '/^install_/s/install_\(.*\)(.*/\1/p' "$0")
-else
-  # use modules from the command line
-  MODULE_LIST="$@"
+setDefaults
+parseArguments "$@"
+
+if [ $summaryOnly -eq 1 ]; then
+  [ -f "$logFile" ] && printSummary
+  exit 0
 fi
 
+checkArguments
+source "$cfgFile"
+
 SECONDS=0
-msg "info: start time: $(date)" | tee "$LOGFILE"
-
-for module in $MODULE_LIST; do
-  do_install "$module" 2>&1 | tee -a "$LOGFILE"
+msg "info: start time: $(date)" | tee "$logFile"
+for module in $moduleList; do
+  do_install "$module" 2>&1 | tee -a "$logFile"
 done
-msg "info: total duration: $SECONDS sec" >> "$LOGFILE"
-msg "info: end time: $(date)"       >> "$LOGFILE"
+msg "info: total duration: $SECONDS sec" >> "$logFile"
+msg "info: end time: $(date)"            >> "$logFile"
 
-echo -e "\n\nSummary:\n"
-head -n 1 "$LOGFILE"
-echo
-grep "duration for module" "$LOGFILE"
-echo
-tail -n 2 "$LOGFILE"
+printSummary
