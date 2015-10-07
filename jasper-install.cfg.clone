@@ -25,9 +25,10 @@ fi
 # (use your values from jasper-install.cfg)
 
 INSTALL_jasper=1              # required
-INSTALL_pocketsphinx=1
-INSTALL_julius=1
-INSTALL_julius_modlex=1
+INSTALL_pocketsphinx=1        # set to 0 if compiled from source (model 1)
+INSTALL_pocketsphinx_data=1   # needed if compiled from source (model 1)
+INSTALL_pocketsphinx_cfg=1    # jasper-configuration for pocketsphinx
+INSTALL_julius_cfg=1          # jasper-configuration for julius
 
 INSTALL_espeak=1
 INSTALL_festival=1
@@ -47,4 +48,5 @@ INSTALL_mitlm=0
 INSTALL_phonetisaurus=0
 INSTALL_phonetisaurus_exp=0
 INSTALL_phonetisaurus_fst=0
-
+INSTALL_julius=0
+INSTALL_julius_modlex=0
