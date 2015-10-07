@@ -60,7 +60,8 @@ should do the job. The script will create a (large) logfile named
 
 Besides `all` you can pass the names of one or more individual modules to 
 `jasper-install`. This is more of a development feature to verify the
-correct operation of the given install-task.
+correct operation of the given install-task. To see all available
+options of `jasper-install`, just run `jasper-install -h`.
 
 If you connect with ssh and don't want to keep the connection open all
 the time, you can also start the installation with
@@ -73,14 +74,9 @@ To monitor the progress in this case, you can use the command
 
 or
 
-    grep "info:" jaspler-install.log
+    ./jasper-install -S
 
-Note that `jasper-install` takes a lot of time to finish (this also
-depends on the configured modules). Running Raspbian off of an HDD/SDD
-speeds things up by about 5%. Search the web for instructions on how to move
-your root-partition to an USB-attached HDD/SDD drive. Also, installation
-time is much faster on a model 2, since the compilation of the source
-modules uses all four available processors.
+The last command extracts a summary of the logfile.
 
 The install script installs a number of packages using the normal package
 management system of Debian (*apt*). Others are downloaded and compiled
@@ -93,11 +89,21 @@ below labeled *Cloning the Installation* for details).
 Some Timings
 ------------
 
-As noted above, the whole `jasper-install` script takes a long time to
-finish. A complete installation will take
+Note that `jasper-install` takes a lot of time to finish. This
+depends on the speed of your internet connection, the speed of your
+SD-card, overclocking and the number of configured modules.
+
+Running Raspbian off of an HDD/SDD speeds things up by about 5% for the
+model1 and by 33% for model2. Search the web for instructions on how to move
+your root-partition to an USB-attached HDD/SDD drive. Also, installation
+time is much faster on a model 2, since the compilation of the source
+modules uses all four available processors.
+
+A complete installation will take
 
   - 7-8h on a Raspberry Pi Model 1
   - 3-4h on a Raspberry Pi Model 2
+  - 2h on a Raspberry Pi Model 2 with a root-filesystem on HDD/SDD
 
 Timings depend on the speed of your SDHC-cards as well as the speed
 of your internet connection. OpenFST is the module taking longest,
@@ -133,8 +139,6 @@ Jasper's project site:
 Cloning the installation
 ------------------------
 
-**this does not work yet!**
-
 Since download and compile of all the prerequisite packages takes
 so long, you can take a shortcut to clone Jasper to other computers.
 
@@ -151,7 +155,7 @@ The following steps are necessary:
      (read the comments in `jasper-install.cfg.clone`).
   4. Run
 
-         sudo ./jasper-install -C jasper-install.cfg.clone all
+         sudo ./jasper-install -f -C jasper-install.cfg.clone all
 
 
 Running jasper
@@ -177,10 +181,9 @@ itself. You can find details about the initial configuration on the
 "Jasper project website").
 
 As an alternative, you can install jasper as a system-service. 
-If not already done during installation, change
-`INSTALL_service` in `jasper-install.cfg` to `1` and run
+If not already done during installation, run
 
-    sudo ./jasper-install service
+    sudo ./jasper-install -f service
     sudo update-rc.d jasper start
 
 The last command is only necessary if you want to start the service at once.
@@ -202,6 +205,12 @@ signal word from "Jasper" to "Thomas". You just have to define
 the file `$PREFIX/lib/jasper/jasper.py` and some files in
 `"$PREFIX/lib/jasper/static`. If you want to return to the original
 state, you should fetch the files from Jasper's Github-project.
+
+To change the name after installation, you can run
+
+    sudo ./jasper-install -f thomas
+
+to install this feature (regardless of the value of `INSTALL_thomas`).
 
 If you prefer a different name, you should follow the instructions on
 the project website of Jasper.
