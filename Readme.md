@@ -91,18 +91,18 @@ Some Timings
 
 Note that `jasper-install` takes a lot of time to finish. This
 depends on the speed of your internet connection, the speed of your
-SD-card, overclocking and the number of configured modules.
+SD-card, overclocking and the number of configured modules. Also,
+installation time is much faster on a model 2, since the compilations
+of the source modules uses all four available processors.
 
 Running Raspbian off of an HDD/SDD speeds things up by about 5% for the
-model1 and by 33% for model2. Search the web for instructions on how to move
-your root-partition to an USB-attached HDD/SDD drive. Also, installation
-time is much faster on a model 2, since the compilation of the source
-modules uses all four available processors.
+model1 and by 50% for model2. Search the web for instructions on how to move
+your root-partition to an USB-attached HDD/SDD drive.
 
 A complete installation will take
 
   - 7-8h on a Raspberry Pi Model 1
-  - 3-4h on a Raspberry Pi Model 2
+  - 3-5h on a Raspberry Pi Model 2
   - 2h on a Raspberry Pi Model 2 with a root-filesystem on HDD/SDD
 
 Timings depend on the speed of your SDHC-cards as well as the speed
