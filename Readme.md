@@ -12,9 +12,9 @@ Raspberry Pi, there is no image for the model 2. Instead of mastering a
 big image, I just provide a ready to run installation script.
 
 The installation script will work on a model 1 or a model 2 Raspberry Pi
-(Bananapi to be verified).
-
-** This is work in progress (beta-stage), but should already work **
+(Bananapi to be verified). Everything was tested with Raspian-Wheezy,
+it might or might not work with Raspbian-Jessie (feedback on this
+issue is appriciated).
 
 
 Configure Installation
@@ -93,7 +93,7 @@ Note that `jasper-install` takes a lot of time to finish. This
 depends on the speed of your internet connection, the speed of your
 SD-card, overclocking and the number of configured modules. Also,
 installation time is much faster on a model 2, since the compilations
-of the source modules uses all four available processors.
+of the source modules use all four available processors.
 
 Running Raspbian off of an HDD/SDD speeds things up by about 5% for the
 model1 and by 50% for model2. Search the web for instructions on how to move
@@ -105,10 +105,8 @@ A complete installation will take
   - 3-5h on a Raspberry Pi Model 2
   - 2h on a Raspberry Pi Model 2 with a root-filesystem on HDD/SDD
 
-Timings depend on the speed of your SDHC-cards as well as the speed
-of your internet connection. OpenFST is the module taking longest,
-compile and linking of it alone takes more than 5h on a model 1
-(about 2h on a model 2).
+OpenFST is the module taking longest, compile and linking of it alone
+takes more than 5h on a model 1 (about 2h on a model 2).
 
 
 Changes to the original install instructions
