@@ -203,7 +203,18 @@ install_pocketsphinx() {
 
 install_pocketsphinx_data() {
   # english data for pocketsphinx
-  apt-get -y install pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
+  eval `grep "VERSION_ID" /etc/os-release`
+  if [ $VERSION_ID -gt 7 ]; then
+    apt-get -y install pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
+  else
+    echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' > \
+         /etc/apt/sources.list.d/jessie.list
+    apt-get update
+    apt-get -y --force-yes -t jessie install \
+       pocketsphinx-lm-en-hub4 pocketsphinx-hmm-en-hub4wsj
+    rm -f /etc/apt/sources.list.d/jessie.list
+    apt-get update
+  fi
 }
 
 # --- install pocket-sphinx from source   -----------------------------------
