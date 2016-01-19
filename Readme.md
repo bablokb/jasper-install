@@ -12,9 +12,13 @@ Raspberry Pi, there is no image for the model 2. Instead of mastering a
 big image, I just provide a ready to run installation script.
 
 The installation script will work on a model 1 or a model 2 Raspberry Pi
-(Bananapi to be verified). Everything was tested with Raspian-Wheezy,
-it might or might not work with Raspbian-Jessie (feedback on this
-issue is appriciated).
+(Bananapi to be verified). Everything was tested with Raspian-Wheezy.
+
+Note that jasper and therefore also jasper-install does not work with
+Raspbian-Jessie, since Jessie ships it's own version of the python
+module `requests`. Jasper overwrites the Jessie-version during
+installation which breaks `pip`. As a consequence, the jasper installation
+is incomplete and all later install steps relying on pip also fail.
 
 
 Configure Installation
